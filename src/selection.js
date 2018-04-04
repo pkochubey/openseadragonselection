@@ -41,9 +41,11 @@
             rect:                    null,
             allowRotation:           true,
             startRotated:            false, // useful for rotated crops
+            hideAtConfirm:           true,
             startRotatedHeight:      0.1,
             restrictToImage:         false,
             onSelection:             null,
+            onCancel:                null,
             prefixUrl:               null,
             navImages:               {
                 selection: {
@@ -264,6 +266,7 @@
         }
 
         this.viewer.addHandler('selection', this.onSelection);
+        this.viewer.addHandler('selection_cancel', this.onCancel);
 
         this.viewer.addHandler('open', this.draw.bind(this));
         this.viewer.addHandler('animation', this.draw.bind(this));
@@ -275,6 +278,27 @@
 
         toggleState: function() {
             return this.setState(!this.isSelecting);
+        },
+
+        removeInfo: function(){
+            var infos = document.getElementsByClassName('info-label');
+            while(infos.length > 0){
+                infos[0].parentNode.removeChild(infos[0]);
+            }
+        },
+
+        setInfo: function(label) {
+            if (this.element){
+                this.removeInfo();
+                var newDiv = document.createElement('div');
+                newDiv.className = 'info-label';
+                newDiv.style.position = 'fixed';
+                newDiv.style.bottom = '0';
+                newDiv.style.width = '100%';
+                newDiv.style.padding = '5px';
+                newDiv.innerHTML = '<pre>'+ label +'</pre>';
+                this.element.appendChild(newDiv);
+            }
         },
 
         setState: function(enabled) {
@@ -298,6 +322,7 @@
         },
 
         disable: function() {
+            this.removeInfo();
             return this.setState(false);
         },
 
@@ -325,7 +350,9 @@
                     result = real;
                 }
                 this.viewer.raiseEvent('selection', result);
-                this.undraw();
+                if (this.hideAtConfirm){
+                    this.undraw();
+                }
             }
             return this;
         },

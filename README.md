@@ -17,6 +17,7 @@ Then you can alter the selection state with any of these:
     selection.enable();
     selection.disable();
     selection.toggleState();
+    selection.setInfo(); // set info text block
 
 ## Options
 
@@ -27,6 +28,7 @@ Then you can alter the selection state with any of these:
         showConfirmDenyButtons:  true,
         styleConfirmDenyButtons: true,
         returnPixelCoordinates:  true,
+        hideAtConfirm:           true,
         keyboardShortcut:        'c', // key to toggle selection mode
         rect:                    null, // initial selection as an OpenSeadragon.SelectionRect object
         allowRotation:           true, // turn selection rotation on or off as needed
@@ -34,6 +36,7 @@ Then you can alter the selection state with any of these:
         startRotatedHeight:      0.1, // only used if startRotated=true; value is relative to image height
         restrictToImage:         false, // true = do not allow any part of the selection to be outside the image
         onSelection:             function(rect) {}, // callback
+        onCancel:                function(rect) {}, // callback
         prefixUrl:               null, // overwrites OpenSeadragon's option
         navImages:               { // overwrites OpenSeadragon's options
             selection: {
