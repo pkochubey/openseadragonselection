@@ -70,15 +70,15 @@
             handleStyle: {
                 top:        '50%',
                 left:       '50%',
-                width:      '6px',
-                height:     '6px',
+                width:      '10px',
+                height:     '10px',
                 margin:     '-4px 0 0 -4px',
                 background: '#000',
                 border:     '1px solid #ccc'
             },
             cornersStyle: {
-                width:      '6px',
-                height:     '6px',
+                width:      '10px',
+                height:     '10px',
                 background: '#000',
                 border:     '1px solid #ccc'
             }
@@ -118,6 +118,7 @@
             new $.MouseTracker({
                 element:     this.borders[i],
                 dragHandler: onBorderDrag.bind(this, i),
+                dragEndHandler: $.delegate( this, onBorderDragEnd ),
             });
 
             corners[i]                  = $.makeNeutralElement('div');
@@ -130,6 +131,7 @@
             new $.MouseTracker({
                 element:     corners[i],
                 dragHandler: onBorderDrag.bind(this, i + 0.5),
+                dragEndHandler:     $.delegate( this, onBorderDragEnd ),
             });
 
             this.borders[i].appendChild(handle);
@@ -292,8 +294,9 @@
                 this.removeInfo();
                 var newDiv = document.createElement('div');
                 newDiv.className = 'info-label';
-                newDiv.style.position = 'fixed';
-                newDiv.style.bottom = '0';
+                newDiv.style.position = 'absolute';
+                newDiv.style.top = '100%';
+                newDiv.style.minWidth = '200px';
                 newDiv.style.width = '100%';
                 newDiv.style.padding = '5px';
                 newDiv.innerHTML = '<pre>'+ label +'</pre>';
@@ -413,6 +416,8 @@
 
     function onOutsideDragEnd() {
         // Eable move after new selection is done
+        this.confirm();
+
         this.viewer.setMouseNavEnabled(true);
         this.rectDone = true;
     }
@@ -436,6 +441,7 @@
 
     function onInsideDragEnd() {
         $.removeClass(this.element, 'dragging');
+        this.confirm();
     }
 
     function onBorderDrag(border, e) {
@@ -500,6 +506,10 @@
             this.rect = oldRect;
         }
         this.draw();
+    }
+
+    function onBorderDragEnd() {
+        this.confirm();
     }
 
     function onKeyPress(e) {
