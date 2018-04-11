@@ -32,11 +32,22 @@
 
             // options
             element:                 null,
+            canvas: null,
+            overlay: null,
             toggleButton:            null,
             showSelectionControl:    true,
             showConfirmDenyButtons:  true,
             styleConfirmDenyButtons: true,
             returnPixelCoordinates:  true,
+            canResize:               true,
+            canDrag:                 true,
+            isCanvas:                false,
+            isPan: true,
+            onMouseDown: null,
+            onMouseUp: null,
+            onMouseDrag: null,
+            onMouseSelect: null,
+            onKeyDown: null,
             keyboardShortcut:        'c',
             rect:                    null,
             allowRotation:           true,
@@ -46,7 +57,9 @@
             restrictToImage:         false,
             onSelection:             null,
             onCancel:                null,
+            onClickInside:           null,
             prefixUrl:               null,
+            waitReDraw: this.throttle(this.drawPaper, 500),
             navImages:               {
                 selection: {
                     REST:   'selection_rest.png',
@@ -88,9 +101,16 @@
         $.extend( true, this.navImages, this.viewer.navImages );
 
         if (!this.element) {
-            this.element = $.makeNeutralElement('div');
-            this.element.style.background = 'rgba(0, 0, 0, 0.1)';
-            this.element.className        = 'selection-box';
+            if(this.isCanvas){
+                this.element = $.makeNeutralElement('canvas');
+                this.element.style.background = 'rgba(0, 0, 0, 0.1)';
+                this.element.id = 'canvas-selection-box';
+                this.element.resize = 'true';
+            }else{
+                this.element = $.makeNeutralElement('div');
+                this.element.style.background = 'rgba(0, 0, 0, 0.1)';
+                this.element.className        = 'selection-box';
+            }
         }
         this.borders = this.borders || [];
         var handle;
@@ -136,9 +156,13 @@
             });
 
             this.borders[i].appendChild(handle);
-            this.element.appendChild(this.borders[i]);
+            if(!this.isCanvas) {
+                this.element.appendChild(this.borders[i]);
+            }
             // defer corners, so they are appended last
-            setTimeout(this.element.appendChild.bind(this.element, corners[i]), 0);
+            if(!this.isCanvas) {
+                setTimeout(this.element.appendChild.bind(this.element, corners[i]), 0);
+            }
         }
         this.borders[0].style.top = 0;
         this.borders[0].style.width = '100%';
@@ -165,12 +189,13 @@
             element:            this.element,
             clickTimeThreshold: this.viewer.clickTimeThreshold,
             clickDistThreshold: this.viewer.clickDistThreshold,
-            dragHandler:        $.delegate( this, onInsideDrag ),
             dragEndHandler:     $.delegate( this, onInsideDragEnd ),
-            // keyHandler:         $.delegate( this, onKeyPress ),
+            dragHandler:        $.delegate( this, onInsideDrag ),
             clickHandler:       $.delegate( this, onClick ),
-            // scrollHandler:      $.delegate( this.viewer, this.viewer.innerTracker.scrollHandler ),
-            // pinchHandler:       $.delegate( this.viewer, this.viewer.innerTracker.pinchHandler ),
+            pressHandler: this.onMouseDown,
+            releaseHandler: this.onMouseUp,
+            nonPrimaryPressHandler:  this.onMouseSelect,
+            keyHandler: this.onKeyDown
         });
 
         this.outerTracker = new $.MouseTracker({
@@ -236,7 +261,9 @@
             });
             var confirm = this.confirmButton.element;
             confirm.classList.add('confirm-button');
-            this.element.appendChild(confirm);
+            if(!this.isCanvas){
+                this.element.appendChild(confirm);
+            }
 
             this.cancelButton = new $.Button({
                 element:    this.cancelButton ? $.getElement( this.cancelButton ) : null,
@@ -253,8 +280,9 @@
             });
             var cancel = this.cancelButton.element;
             cancel.classList.add('cancel-button');
-            this.element.appendChild(cancel);
-
+            if(!this.isCanvas) {
+                this.element.appendChild(cancel);
+            }
             if (this.styleConfirmDenyButtons) {
                 confirm.style.position = 'absolute';
                 confirm.style.top = '50%';
@@ -270,6 +298,7 @@
 
         this.viewer.addHandler('selection', this.onSelection);
         this.viewer.addHandler('selection_cancel', this.onCancel);
+        this.viewer.addHandler('drag_selection', this.onMouseDrag);
 
         this.viewer.addHandler('open', this.draw.bind(this));
         this.viewer.addHandler('animation', this.draw.bind(this));
@@ -281,6 +310,17 @@
 
         toggleState: function() {
             return this.setState(!this.isSelecting);
+        },
+
+        getSize: function() {
+            return {height: (this.element.style.height.split('.')[0]).replace('px',''), width:(this.element.style.width.split('.')[0]).replace('px',''), rect: this.rect};
+        },
+
+        removeTools: function(){
+            var infos = document.getElementsByClassName('tools');
+            while(infos.length > 0){
+                infos[0].parentNode.removeChild(infos[0]);
+            }
         },
 
         removeInfo: function(){
@@ -301,6 +341,21 @@
                 newDiv.style.width = '100%';
                 newDiv.style.padding = '5px';
                 newDiv.innerHTML = '<pre>'+ label +'</pre>';
+                this.element.appendChild(newDiv);
+            }
+        },
+
+        setTools: function(html) {
+            if (this.element){
+                this.removeTools();
+                var newDiv = document.createElement('div');
+                newDiv.className = 'tools';
+                newDiv.style.position = 'absolute';
+                newDiv.style.top = '100%';
+                newDiv.style.minWidth = '200px';
+                newDiv.style.width = '100%';
+                newDiv.style.padding = '5px';
+                newDiv.innerHTML = html;
                 this.element.appendChild(newDiv);
             }
         },
@@ -335,7 +390,45 @@
                 this.overlay.update(this.rect.normalize());
                 this.overlay.drawHTML(this.viewer.drawer.container, this.viewer.viewport);
             }
+            this.waitReDraw();
             return this;
+        },
+
+        drawPaper: function() {
+            if (this.isCanvas){
+                if(paper.view){
+                    var size = this.getSize();
+                    paper.view.setViewSize(new paper.Size(size.width, size.height));
+                    paper.view.zoom = (this.viewer.world.getItemAt(0)).viewportToImageZoom(this.viewer.viewport.getZoom(true));
+                    paper.view.center = new paper.Point(0, 0);
+                }
+            }
+            return this;
+        },
+
+        throttle: function(func, ms) {
+            var isThrottled = false,
+                savedArgs,
+                savedThis;
+
+            function wrapper() {
+                if (isThrottled) {
+                    savedArgs = arguments;
+                    savedThis = this;
+                    return;
+                }
+
+                func.apply(this, arguments);
+                isThrottled = true;
+                setTimeout(function() {
+                    isThrottled = false;
+                    if (savedArgs) {
+                        wrapper.apply(savedThis, savedArgs);
+                        savedArgs = savedThis = null;
+                    }
+                }, ms);
+            }
+            return wrapper;
         },
 
         undraw: function() {
@@ -368,6 +461,9 @@
     });
 
     function onOutsideDrag(e) {
+        if(!this.canDrag){
+            return;
+        }
         // Disable move when makeing new selection
         this.viewer.setMouseNavEnabled(false);
         var delta = this.viewer.viewport.deltaPointsFromPixels(e.delta, true);
@@ -437,6 +533,11 @@
     }
 
     function onInsideDrag(e) {
+        if(!this.canDrag){
+            this.viewer.raiseEvent('drag_selection', e);
+            return;
+        }
+
         $.addClass(this.element, 'dragging');
         var delta = this.viewer.viewport.deltaPointsFromPixels(e.delta, true);
         this.rect.x += delta.x;
@@ -455,6 +556,9 @@
     }
 
     function onBorderDrag(border, e) {
+        if(!this.canDrag){
+            return;
+        }
         var delta = e.delta;
         var rotation = this.rect.getDegreeRotation();
         var center;
