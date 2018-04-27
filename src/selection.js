@@ -1,11 +1,11 @@
-(function($) {
+(function ($) {
     'use strict';
 
     if (!$.version || $.version.major < 2) {
         throw new Error('This version of OpenSeadragonSelection requires OpenSeadragon version 2.0.0+');
     }
 
-    $.Viewer.prototype.selection = function(options) {
+    $.Viewer.prototype.selection = function (options) {
         if (!this.selectionInstance || options) {
             options = options || {};
             options.viewer = this;
@@ -16,100 +16,101 @@
 
 
     /**
-    * @class Selection
-    * @classdesc Provides functionality for selecting part of an image
-    * @memberof OpenSeadragon
-    * @param {Object} options
-    */
-    $.Selection = function ( options ) {
+     * @class Selection
+     * @classdesc Provides functionality for selecting part of an image
+     * @memberof OpenSeadragon
+     * @param {Object} options
+     */
+    $.Selection = function (options) {
 
-        $.extend( true, this, {
+        $.extend(true, this, {
             // internal state properties
-            viewer:                  null,
-            isSelecting:             false,
-            buttonActiveImg:         false,
-            rectDone:                true,
+            viewer: null,
+            isSelecting: false,
+            buttonActiveImg: false,
+            rectDone: true,
 
             // options
-            element:                 null,
+            element: null,
             canvas: null,
             overlay: null,
-            toggleButton:            null,
-            showSelectionControl:    true,
-            showConfirmDenyButtons:  true,
+            toggleButton: null,
+            showSelectionControl: true,
+            showConfirmDenyButtons: true,
             styleConfirmDenyButtons: true,
-            returnPixelCoordinates:  true,
-            canResize:               true,
-            canDrag:                 true,
-            isCanvas:                false,
+            returnPixelCoordinates: true,
+            canResize: true,
+            canDrag: true,
+            isCanvas: false,
             isPan: true,
             onMouseDown: null,
             onMouseUp: null,
             onMouseDrag: null,
             onMouseSelect: null,
             onKeyDown: null,
-            keyboardShortcut:        'c',
-            rect:                    null,
-            allowRotation:           true,
-            startRotated:            false, // useful for rotated crops
-            hideAtConfirm:           true,
-            startRotatedHeight:      0.1,
-            restrictToImage:         false,
-            onSelection:             null,
-            onCancel:                null,
-            onClickInside:           null,
-            prefixUrl:               null,
+            keyboardShortcut: 'c',
+            rect: null,
+            maxSize: 0,
+            allowRotation: true,
+            startRotated: false, // useful for rotated crops
+            hideAtConfirm: true,
+            startRotatedHeight: 0.1,
+            restrictToImage: false,
+            onSelection: null,
+            onCancel: null,
+            onClickInside: null,
+            prefixUrl: null,
             waitReDraw: this.throttle(this.drawPaper, 500),
-            navImages:               {
+            navImages: {
                 selection: {
-                    REST:   'selection_rest.png',
-                    GROUP:  'selection_grouphover.png',
-                    HOVER:  'selection_hover.png',
-                    DOWN:   'selection_pressed.png'
+                    REST: 'selection_rest.png',
+                    GROUP: 'selection_grouphover.png',
+                    HOVER: 'selection_hover.png',
+                    DOWN: 'selection_pressed.png'
                 },
                 selectionConfirm: {
-                    REST:   'selection_confirm_rest.png',
-                    GROUP:  'selection_confirm_grouphover.png',
-                    HOVER:  'selection_confirm_hover.png',
-                    DOWN:   'selection_confirm_pressed.png'
+                    REST: 'selection_confirm_rest.png',
+                    GROUP: 'selection_confirm_grouphover.png',
+                    HOVER: 'selection_confirm_hover.png',
+                    DOWN: 'selection_confirm_pressed.png'
                 },
                 selectionCancel: {
-                    REST:   'selection_cancel_rest.png',
-                    GROUP:  'selection_cancel_grouphover.png',
-                    HOVER:  'selection_cancel_hover.png',
-                    DOWN:   'selection_cancel_pressed.png'
+                    REST: 'selection_cancel_rest.png',
+                    GROUP: 'selection_cancel_grouphover.png',
+                    HOVER: 'selection_cancel_hover.png',
+                    DOWN: 'selection_cancel_pressed.png'
                 },
             },
             handleStyle: {
-                top:        '50%',
-                left:       '50%',
-                width:      '10px',
-                height:     '10px',
-                margin:     '-4px 0 0 -4px',
+                top: '50%',
+                left: '50%',
+                width: '10px',
+                height: '10px',
+                margin: '-4px 0 0 -4px',
                 background: '#000',
-                border:     '1px solid #ccc'
+                border: '1px solid #ccc'
             },
             cornersStyle: {
-                width:      '10px',
-                height:     '10px',
+                width: '10px',
+                height: '10px',
                 background: '#000',
-                border:     '1px solid #ccc'
+                border: '1px solid #ccc'
             }
 
-        }, options );
+        }, options);
 
-        $.extend( true, this.navImages, this.viewer.navImages );
+        $.extend(true, this.navImages, this.viewer.navImages);
 
         if (!this.element) {
-            if(this.isCanvas){
+            if (this.isCanvas) {
                 this.element = $.makeNeutralElement('canvas');
                 this.element.style.background = 'rgba(0, 0, 0, 0.1)';
                 this.element.id = 'canvas-selection-box';
                 this.element.resize = 'true';
-            }else{
+            } else {
                 this.element = $.makeNeutralElement('div');
                 this.element.style.background = 'rgba(0, 0, 0, 0.1)';
-                this.element.className        = 'selection-box';
+                this.element.className = 'selection-box';
             }
         }
         this.borders = this.borders || [];
@@ -117,50 +118,50 @@
         var corners = [];
         for (var i = 0; i < 4; i++) {
             if (!this.borders[i]) {
-                this.borders[i]                  = $.makeNeutralElement('div');
-                this.borders[i].className        = 'border-' + i;
-                this.borders[i].style.position   = 'absolute';
-                this.borders[i].style.width      = '1px';
-                this.borders[i].style.height     = '1px';
+                this.borders[i] = $.makeNeutralElement('div');
+                this.borders[i].className = 'border-' + i;
+                this.borders[i].style.position = 'absolute';
+                this.borders[i].style.width = '1px';
+                this.borders[i].style.height = '1px';
                 this.borders[i].style.background = '#fff';
             }
 
-            handle                  = $.makeNeutralElement('div');
-            handle.className        = 'border-' + i + '-handle';
-            handle.style.position   = 'absolute';
-            handle.style.top        = this.handleStyle.top;
-            handle.style.left       = this.handleStyle.left;
-            handle.style.width      = this.handleStyle.width;
-            handle.style.height     = this.handleStyle.height;
-            handle.style.margin     = this.handleStyle.margin;
+            handle = $.makeNeutralElement('div');
+            handle.className = 'border-' + i + '-handle';
+            handle.style.position = 'absolute';
+            handle.style.top = this.handleStyle.top;
+            handle.style.left = this.handleStyle.left;
+            handle.style.width = this.handleStyle.width;
+            handle.style.height = this.handleStyle.height;
+            handle.style.margin = this.handleStyle.margin;
             handle.style.background = this.handleStyle.background;
-            handle.style.border     = this.handleStyle.border;
+            handle.style.border = this.handleStyle.border;
 
             new $.MouseTracker({
-                element:     this.borders[i],
+                element: this.borders[i],
                 dragHandler: onBorderDrag.bind(this, i),
                 dragEndHandler: onBorderDragEnd.bind(this, i),
             });
 
-            corners[i]                  = $.makeNeutralElement('div');
-            corners[i].className        = 'corner-' + i + '-handle';
-            corners[i].style.position   = 'absolute';
-            corners[i].style.width      = this.cornersStyle.width;
-            corners[i].style.height     = this.cornersStyle.height;
+            corners[i] = $.makeNeutralElement('div');
+            corners[i].className = 'corner-' + i + '-handle';
+            corners[i].style.position = 'absolute';
+            corners[i].style.width = this.cornersStyle.width;
+            corners[i].style.height = this.cornersStyle.height;
             corners[i].style.background = this.cornersStyle.background;
-            corners[i].style.border     = this.cornersStyle.border;
+            corners[i].style.border = this.cornersStyle.border;
             new $.MouseTracker({
-                element:     corners[i],
+                element: corners[i],
                 dragHandler: onBorderDrag.bind(this, i + 0.5),
                 dragEndHandler: onBorderDragEnd.bind(this, i + 0.5),
             });
 
             this.borders[i].appendChild(handle);
-            if(!this.isCanvas) {
+            if (!this.isCanvas) {
                 this.element.appendChild(this.borders[i]);
             }
             // defer corners, so they are appended last
-            if(!this.isCanvas) {
+            if (!this.isCanvas) {
                 setTimeout(this.element.appendChild.bind(this.element, corners[i]), 0);
             }
         }
@@ -186,26 +187,26 @@
         }
 
         this.innerTracker = new $.MouseTracker({
-            element:            this.element,
+            element: this.element,
             clickTimeThreshold: this.viewer.clickTimeThreshold,
             clickDistThreshold: this.viewer.clickDistThreshold,
-            dragEndHandler:     $.delegate( this, onInsideDragEnd ),
-            dragHandler:        $.delegate( this, onInsideDrag ),
-            clickHandler:       $.delegate( this, onClick ),
+            dragEndHandler: $.delegate(this, onInsideDragEnd),
+            dragHandler: $.delegate(this, onInsideDrag),
+            clickHandler: $.delegate(this, onClick),
             pressHandler: this.onMouseDown,
             releaseHandler: this.onMouseUp,
-            nonPrimaryPressHandler:  this.onMouseSelect,
+            nonPrimaryPressHandler: this.onMouseSelect,
             keyHandler: this.onKeyDown
         });
 
         this.outerTracker = new $.MouseTracker({
-            element:            this.viewer.canvas,
+            element: this.viewer.canvas,
             clickTimeThreshold: this.viewer.clickTimeThreshold,
             clickDistThreshold: this.viewer.clickDistThreshold,
-            dragHandler:        $.delegate( this, onOutsideDrag ),
-            dragEndHandler:     $.delegate( this, onOutsideDragEnd ),
-            clickHandler:       $.delegate( this, onClick ),
-            startDisabled:      !this.isSelecting,
+            dragHandler: $.delegate(this, onOutsideDrag),
+            dragEndHandler: $.delegate(this, onOutsideDragEnd),
+            clickHandler: $.delegate(this, onClick),
+            startDisabled: !this.isSelecting,
         });
 
         if (this.keyboardShortcut) {
@@ -224,17 +225,17 @@
         var onBlurHandler = anyButton ? anyButton.onBlur : null;
         if (this.showSelectionControl) {
             this.toggleButton = new $.Button({
-                element:    this.toggleButton ? $.getElement( this.toggleButton ) : null,
+                element: this.toggleButton ? $.getElement(this.toggleButton) : null,
                 clickTimeThreshold: this.viewer.clickTimeThreshold,
                 clickDistThreshold: this.viewer.clickDistThreshold,
-                tooltip:    $.getString('Tooltips.SelectionToggle') || 'Toggle selection',
-                srcRest:    prefix + this.navImages.selection.REST,
-                srcGroup:   prefix + this.navImages.selection.GROUP,
-                srcHover:   prefix + this.navImages.selection.HOVER,
-                srcDown:    prefix + this.navImages.selection.DOWN,
-                onRelease:  this.toggleState.bind( this ),
-                onFocus:    onFocusHandler,
-                onBlur:     onBlurHandler
+                tooltip: $.getString('Tooltips.SelectionToggle') || 'Toggle selection',
+                srcRest: prefix + this.navImages.selection.REST,
+                srcGroup: prefix + this.navImages.selection.GROUP,
+                srcHover: prefix + this.navImages.selection.HOVER,
+                srcDown: prefix + this.navImages.selection.DOWN,
+                onRelease: this.toggleState.bind(this),
+                onFocus: onFocusHandler,
+                onBlur: onBlurHandler
             });
             if (useGroup) {
                 this.viewer.buttons.buttons.push(this.toggleButton);
@@ -247,40 +248,40 @@
         }
         if (this.showConfirmDenyButtons) {
             this.confirmButton = new $.Button({
-                element:    this.confirmButton ? $.getElement( this.confirmButton ) : null,
+                element: this.confirmButton ? $.getElement(this.confirmButton) : null,
                 clickTimeThreshold: this.viewer.clickTimeThreshold,
                 clickDistThreshold: this.viewer.clickDistThreshold,
-                tooltip:    $.getString('Tooltips.SelectionConfirm') || 'Confirm selection',
-                srcRest:    prefix + this.navImages.selectionConfirm.REST,
-                srcGroup:   prefix + this.navImages.selectionConfirm.GROUP,
-                srcHover:   prefix + this.navImages.selectionConfirm.HOVER,
-                srcDown:    prefix + this.navImages.selectionConfirm.DOWN,
-                onRelease:  this.confirm.bind( this ),
-                onFocus:    onFocusHandler,
-                onBlur:     onBlurHandler
+                tooltip: $.getString('Tooltips.SelectionConfirm') || 'Confirm selection',
+                srcRest: prefix + this.navImages.selectionConfirm.REST,
+                srcGroup: prefix + this.navImages.selectionConfirm.GROUP,
+                srcHover: prefix + this.navImages.selectionConfirm.HOVER,
+                srcDown: prefix + this.navImages.selectionConfirm.DOWN,
+                onRelease: this.confirm.bind(this),
+                onFocus: onFocusHandler,
+                onBlur: onBlurHandler
             });
             var confirm = this.confirmButton.element;
             confirm.classList.add('confirm-button');
-            if(!this.isCanvas){
+            if (!this.isCanvas) {
                 this.element.appendChild(confirm);
             }
 
             this.cancelButton = new $.Button({
-                element:    this.cancelButton ? $.getElement( this.cancelButton ) : null,
+                element: this.cancelButton ? $.getElement(this.cancelButton) : null,
                 clickTimeThreshold: this.viewer.clickTimeThreshold,
                 clickDistThreshold: this.viewer.clickDistThreshold,
-                tooltip:    $.getString('Tooltips.SelectionConfirm') || 'Cancel selection',
-                srcRest:    prefix + this.navImages.selectionCancel.REST,
-                srcGroup:   prefix + this.navImages.selectionCancel.GROUP,
-                srcHover:   prefix + this.navImages.selectionCancel.HOVER,
-                srcDown:    prefix + this.navImages.selectionCancel.DOWN,
-                onRelease:  this.cancel.bind( this ),
-                onFocus:    onFocusHandler,
-                onBlur:     onBlurHandler
+                tooltip: $.getString('Tooltips.SelectionConfirm') || 'Cancel selection',
+                srcRest: prefix + this.navImages.selectionCancel.REST,
+                srcGroup: prefix + this.navImages.selectionCancel.GROUP,
+                srcHover: prefix + this.navImages.selectionCancel.HOVER,
+                srcDown: prefix + this.navImages.selectionCancel.DOWN,
+                onRelease: this.cancel.bind(this),
+                onFocus: onFocusHandler,
+                onBlur: onBlurHandler
             });
             var cancel = this.cancelButton.element;
             cancel.classList.add('cancel-button');
-            if(!this.isCanvas) {
+            if (!this.isCanvas) {
                 this.element.appendChild(cancel);
             }
             if (this.styleConfirmDenyButtons) {
@@ -306,32 +307,79 @@
         this.viewer.addHandler('rotate', this.draw.bind(this));
     };
 
-    $.extend( $.Selection.prototype, $.ControlDock.prototype, /** @lends OpenSeadragon.Selection.prototype */{
+    $.extend($.Selection.prototype, $.ControlDock.prototype, /** @lends OpenSeadragon.Selection.prototype */{
 
-        toggleState: function() {
+        toggleState: function () {
             return this.setState(!this.isSelecting);
         },
 
-        getSize: function() {
-            return {height: (this.element.style.height.split('.')[0]).replace('px',''), width:(this.element.style.width.split('.')[0]).replace('px',''), rect: this.rect};
+        progress: function(isProgress){
+            if(isProgress){
+                if (this.element) {
+                    var newDiv = document.createElement('div');
+                    newDiv.className = 'progress-loader';
+                    this.element.appendChild(newDiv);
+                }
+            }else{
+                this.removeProgress();
+            }
         },
 
-        removeTools: function(){
+        image: function(base64, width, height){
+            var canvas = document.createElement('canvas');
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.height = height;
+            canvas.width = width;
+            canvas.className = 'image-canvas';
+            var ctx = canvas.getContext("2d");
+            ctx.globalAlpha = 0.8;
+            var image = new Image();
+            image.onload = function() {
+                ctx.drawImage(image, 0, 0);
+            };
+            image.src = "data:image/jpeg;base64," + base64
+            this.element.appendChild(canvas);
+        },
+
+        getSize: function () {
+            return {
+                height: (this.element.style.height.split('.')[0]).replace('px', ''),
+                width: (this.element.style.width.split('.')[0]).replace('px', ''),
+                rect: this.rect
+            };
+        },
+
+        removeProgress: function () {
+            var panel = document.getElementsByClassName('progress-loader');
+            while (panel.length > 0) {
+                panel[0].parentNode.removeChild(panel[0]);
+            }
+        },
+
+        removeCanvas: function () {
+            var img = document.getElementsByClassName('image-canvas');
+            while (img.length > 0) {
+                img[0].parentNode.removeChild(img[0]);
+            }
+        },
+
+        removeTools: function () {
             var infos = document.getElementsByClassName('tools');
-            while(infos.length > 0){
+            while (infos.length > 0) {
                 infos[0].parentNode.removeChild(infos[0]);
             }
         },
 
-        removeInfo: function(){
+        removeInfo: function () {
             var infos = document.getElementsByClassName('info-label');
-            while(infos.length > 0){
+            while (infos.length > 0) {
                 infos[0].parentNode.removeChild(infos[0]);
             }
         },
 
-        setInfo: function(label) {
-            if (this.element){
+        setInfo: function (label) {
+            if (this.element) {
                 this.removeInfo();
                 var newDiv = document.createElement('div');
                 newDiv.className = 'info-label';
@@ -340,13 +388,13 @@
                 newDiv.style.minWidth = '200px';
                 newDiv.style.width = '100%';
                 newDiv.style.padding = '5px';
-                newDiv.innerHTML = '<pre>'+ label +'</pre>';
+                newDiv.innerHTML = '<pre>' + label + '</pre>';
                 this.element.appendChild(newDiv);
             }
         },
 
-        setTools: function(html) {
-            if (this.element){
+        setTools: function (html) {
+            if (this.element) {
                 this.removeTools();
                 var newDiv = document.createElement('div');
                 newDiv.className = 'tools';
@@ -360,7 +408,7 @@
             }
         },
 
-        setState: function(enabled) {
+        setState: function (enabled) {
             this.isSelecting = enabled;
             // this.viewer.innerTracker.setTracking(!enabled);
             this.outerTracker.setTracking(enabled);
@@ -372,20 +420,22 @@
             return this;
         },
 
-        setAllowRotation: function(allowRotation) {
+        setAllowRotation: function (allowRotation) {
             this.allowRotation = allowRotation;
         },
 
-        enable: function() {
+        enable: function () {
             return this.setState(true);
         },
 
-        disable: function() {
+        disable: function () {
             this.removeInfo();
+            this.removeProgress();
+            this.removeCanvas();
             return this.setState(false);
         },
 
-        draw: function() {
+        draw: function () {
             if (this.rect) {
                 this.overlay.update(this.rect.normalize());
                 this.overlay.drawHTML(this.viewer.drawer.container, this.viewer.viewport);
@@ -394,19 +444,28 @@
             return this;
         },
 
-        drawPaper: function() {
-            if (this.isCanvas){
-                if(paper.view){
+        drawPaper: function (data) {
+            if (this.isCanvas) {
+                if (paper.view && this.viewer && this.viewer.world) {
                     var size = this.getSize();
                     paper.view.setViewSize(new paper.Size(size.width, size.height));
                     paper.view.zoom = (this.viewer.world.getItemAt(0)).viewportToImageZoom(this.viewer.viewport.getZoom(true));
                     paper.view.center = new paper.Point(0, 0);
+                    if(data){
+                        paper.project.clear()
+                        paper.project.importSVG(data)
+                        paper.project.activeLayer.fitBounds(paper.view.bounds);
+                    }else{
+                        var path = new paper.Path.Rectangle(paper.view.bounds);
+                        path.selected = false;
+                    }
+                    paper.view.draw()
                 }
             }
             return this;
         },
 
-        throttle: function(func, ms) {
+        throttle: function (func, ms) {
             var isThrottled = false,
                 savedArgs,
                 savedThis;
@@ -420,7 +479,7 @@
 
                 func.apply(this, arguments);
                 isThrottled = true;
-                setTimeout(function() {
+                setTimeout(function () {
                     isThrottled = false;
                     if (savedArgs) {
                         wrapper.apply(savedThis, savedArgs);
@@ -428,16 +487,17 @@
                     }
                 }, ms);
             }
+
             return wrapper;
         },
 
-        undraw: function() {
+        undraw: function () {
             this.overlay.destroy();
             this.rect = null;
             return this;
         },
 
-        confirm: function() {
+        confirm: function () {
             if (this.rect) {
                 var result = this.rect.normalize();
                 if (this.returnPixelCoordinates) {
@@ -447,21 +507,21 @@
                     result = real;
                 }
                 this.viewer.raiseEvent('selection', result);
-                if (this.hideAtConfirm){
+                if (this.hideAtConfirm) {
                     this.undraw();
                 }
             }
             return this;
         },
 
-        cancel: function() {
+        cancel: function () {
             this.viewer.raiseEvent('selection_cancel', false);
             return this.undraw();
         },
     });
 
     function onOutsideDrag(e) {
-        if(!this.canDrag){
+        if (!this.canDrag) {
             return;
         }
         // Disable move when makeing new selection
@@ -488,6 +548,9 @@
             if (this.restrictToImage) {
                 oldRect = this.rect.clone();
             }
+
+            var real = $.SelectionRect.fromRect(this.viewer.viewport.viewportToImageRectangle(this.rect.normalize())).round();
+
             if (this.rectDone) {
                 // All rotation as needed.
                 if (this.allowRotation) {
@@ -499,8 +562,33 @@
                 if (this.startRotated) {
                     this.rect = getPrerotatedRect(this.rotatedStartPoint, end, this.startRotatedHeight);
                 } else {
-                    this.rect.width += delta.x;
-                    this.rect.height += delta.y;
+                    if (this.maxSize > 0) {
+                        if (real.height >= this.maxSize && delta.y >= 0) {
+                            if (real.width >= this.maxSize && delta.x >= 0) {
+                                return
+                            }
+                        }
+
+                        this.rect.height += delta.y
+                        if (real.width >= this.maxSize && delta.x >= 0) {
+                            if (real.height >= this.maxSize && delta.y >= 0) {
+                                return
+                            }
+                        }
+                        this.rect.width += delta.x
+                    } else {
+                        this.rect.width += delta.x;
+                        this.rect.height += delta.y;
+                    }
+
+                    real = $.SelectionRect.fromRect(this.viewer.viewport.viewportToImageRectangle(this.rect.normalize())).round();
+                    var maxRect = this.viewer.viewport.imageToViewportRectangle(this.rect.x, this.rect.y, this.maxSize, this.maxSize);
+                    if (this.maxSize > 0 && real.height >= this.maxSize) {
+                        this.rect.height = maxRect.height
+                    }
+                    if (this.maxSize > 0 && real.width >= this.maxSize) {
+                        this.rect.width = maxRect.width
+                    }
                 }
             }
             var bounds = this.viewer.world.getHomeBounds();
@@ -513,11 +601,11 @@
 
     function onOutsideDragEnd() {
         // Eable move after new selection is done
-        if (this.rect.width < 0){
+        if (this.rect.width < 0) {
             this.rect.x += this.rect.width;
             this.rect.width = Math.abs(this.rect.width);
         }
-        if (this.rect.height < 0){
+        if (this.rect.height < 0) {
             this.rect.y += this.rect.height;
             this.rect.height = Math.abs(this.rect.height);
         }
@@ -533,7 +621,7 @@
     }
 
     function onInsideDrag(e) {
-        if(!this.canDrag){
+        if (!this.canDrag) {
             this.viewer.raiseEvent('drag_selection', e);
             return;
         }
@@ -556,7 +644,7 @@
     }
 
     function onBorderDrag(border, e) {
-        if(!this.canDrag){
+        if (!this.canDrag) {
             return;
         }
         var delta = e.delta;
@@ -619,15 +707,39 @@
         if (this.restrictToImage && !this.rect.fitsIn(new $.Rect(0, 0, bounds.width, bounds.height))) {
             this.rect = oldRect;
         }
+
+        if (this.maxSize > 0) {
+            var real = $.SelectionRect.fromRect(this.viewer.viewport.viewportToImageRectangle(this.rect.normalize())).round();
+            var maxRect = this.viewer.viewport.imageToViewportRectangle(this.rect.x, this.rect.y, this.maxSize, this.maxSize);
+            if (this.maxSize > 0 && real.height >= this.maxSize) {
+                this.rect.height = maxRect.height
+            }
+            if (this.maxSize > 0 && real.width >= this.maxSize) {
+                this.rect.width = maxRect.width
+            }
+
+            if (real.height >= this.maxSize) {
+                if (real.width >= this.maxSize) {
+                    return;
+                }
+            }
+
+            if (real.width >= this.maxSize) {
+                if (real.height >= this.maxSize) {
+                    return;
+                }
+            }
+        }
+
         this.draw();
     }
 
-    function onBorderDragEnd(){
-        if (this.rect.width < 0){
+    function onBorderDragEnd() {
+        if (this.rect.width < 0) {
             this.rect.x += this.rect.width;
             this.rect.width = Math.abs(this.rect.width);
         }
-        if (this.rect.height < 0){
+        if (this.rect.height < 0) {
             this.rect.y += this.rect.height;
             this.rect.height = Math.abs(this.rect.height);
         }
