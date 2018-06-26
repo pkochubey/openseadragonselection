@@ -51,6 +51,7 @@
             keyboardShortcut: 'c',
             rect: null,
             maxSize: 0,
+            alpha:0.8,
             allowRotation: true,
             startRotated: false, // useful for rotated crops
             hideAtConfirm: true,
@@ -60,7 +61,7 @@
             onCancel: null,
             onClickInside: null,
             prefixUrl: null,
-            waitReDraw: this.throttle(this.drawPaper, 500),
+            waitReDraw: this.reDrawPaper,
             navImages: {
                 selection: {
                     REST: 'selection_rest.png',
@@ -194,6 +195,7 @@
             dragHandler: $.delegate(this, onInsideDrag),
             clickHandler: $.delegate(this, onClick),
             pressHandler: this.onMouseDown,
+            pinchHandler: $.delegate(this.viewer, this.viewer.innerTracker.pinchHandler),
             releaseHandler: this.onMouseUp,
             nonPrimaryPressHandler: this.onMouseSelect,
             keyHandler: this.onKeyDown
@@ -325,7 +327,7 @@
             }
         },
 
-        image: function(base64, width, height){
+        image: function(base64, width, height, alpha){
             var canvas = document.createElement('canvas');
             canvas.style.width = '100%';
             canvas.style.height = '100%';
@@ -333,19 +335,23 @@
             canvas.width = width;
             canvas.className = 'image-canvas';
             var ctx = canvas.getContext("2d");
-            ctx.globalAlpha = 0.8;
+            ctx.globalAlpha = alpha;
             var image = new Image();
-            image.onload = function() {
+            image.onload = () => {
                 ctx.drawImage(image, 0, 0);
+                var c = document.getElementsByClassName('image-canvas');
+                if (c && c.length > 0) {
+                    c[0].parentNode.removeChild(c[0]);
+                }
+                this.element.appendChild(canvas);
             };
             image.src = "data:image/jpeg;base64," + base64
-            this.element.appendChild(canvas);
         },
 
         getSize: function () {
             return {
-                height: (this.element.style.height.split('.')[0]).replace('px', ''),
-                width: (this.element.style.width.split('.')[0]).replace('px', ''),
+                height: parseInt((this.element.style.height.split('.')[0]).replace('px', '')),
+                width: parseInt((this.element.style.width.split('.')[0]).replace('px', '')),
                 rect: this.rect
             };
         },
@@ -378,6 +384,13 @@
             }
         },
 
+        removeSlideOpacity: function () {
+            var scroll = document.getElementsByClassName('slide-opacity');
+            while (scroll.length > 0) {
+                scroll[0].parentNode.removeChild(scroll[0]);
+            }
+        },
+
         setInfo: function (label) {
             if (this.element) {
                 this.removeInfo();
@@ -390,6 +403,21 @@
                 newDiv.style.padding = '5px';
                 newDiv.innerHTML = '<pre>' + label + '</pre>';
                 this.element.appendChild(newDiv);
+            }
+        },
+
+        showSlideOpacity: function (label) {
+            if (this.element) {
+                this.removeSlideOpacity();
+                var newInput = document.createElement('input');
+                newInput.className = 'slide-opacity';
+                newInput.type= 'range';
+                newInput.orient = 'vertical';
+                newInput.min = '0';
+                newInput.max = '100';
+                newInput.value = this.alpha * 100;
+                newInput.step = '1';
+                this.element.appendChild(newInput);
             }
         },
 
@@ -444,9 +472,22 @@
             return this;
         },
 
+        reDrawPaper: function(){
+            if (this.isCanvas) {
+                if (paper.view && this.viewer && this.viewer.world && this.viewer.world.getItemAt(0)) {
+                    var size = this.getSize();
+                    paper.view.setViewSize(new paper.Size(size.width, size.height));
+                    paper.view.zoom = (this.viewer.world.getItemAt(0)).viewportToImageZoom(this.viewer.viewport.getZoom(true));
+                    paper.view.center = new paper.Point(0, 0);
+                    paper.view.draw()
+                }
+            }
+            return this;
+        },
+
         drawPaper: function (data) {
             if (this.isCanvas) {
-                if (paper.view && this.viewer && this.viewer.world) {
+                if (paper.view && this.viewer && this.viewer.world && this.viewer.world.getItemAt(0)) {
                     var size = this.getSize();
                     paper.view.setViewSize(new paper.Size(size.width, size.height));
                     paper.view.zoom = (this.viewer.world.getItemAt(0)).viewportToImageZoom(this.viewer.viewport.getZoom(true));
@@ -495,6 +536,20 @@
             this.overlay.destroy();
             this.rect = null;
             return this;
+        },
+
+        getRect: function() {
+            if (this.rect) {
+                var result = this.rect.normalize();
+                if (this.returnPixelCoordinates) {
+                    var real = this.viewer.viewport.viewportToImageRectangle(result);
+                    real = $.SelectionRect.fromRect(real).round();
+                    real.rotation = result.rotation;
+                    result = real;
+                }
+                return result
+            }
+            return null
         },
 
         confirm: function () {

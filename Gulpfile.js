@@ -2,6 +2,7 @@
 
 var gulp = require('gulp');
 var plugins = require('gulp-load-plugins')();
+let uglify = require('gulp-uglify-es').default;
 
 gulp.task('uglify', function() {
     return gulp.src([
@@ -14,9 +15,9 @@ gulp.task('uglify', function() {
         .pipe(plugins.jshint.reporter('jshint-stylish'))
         .pipe(plugins.sourcemaps.init())
         .pipe(plugins.concat('openseadragonselection.js'))
-        .pipe(plugins.uglify())
+        .pipe(uglify())
         .pipe(plugins.sourcemaps.write('./'))
-        .pipe(gulp.dest('./dist'));
+        .pipe(gulp.dest('../dpathology/new_frontend/static/js'));
 });
 
 gulp.task('watch', ['uglify'], function () {
