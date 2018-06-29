@@ -391,8 +391,8 @@
             }
         },
 
-        setInfo: function (label) {
-            if (this.element) {
+        setInfo: function (label, onTop = false) {
+            if (this.element && !onTop) {
                 this.removeInfo();
                 var newDiv = document.createElement('div');
                 newDiv.className = 'info-label';
@@ -403,6 +403,18 @@
                 newDiv.style.padding = '5px';
                 newDiv.innerHTML = '<pre>' + label + '</pre>';
                 this.element.appendChild(newDiv);
+            }
+            if (this.element && onTop) {
+                this.removeInfo();
+                var newDiv = document.createElement('div');
+                newDiv.className = 'info-label';
+                newDiv.style.position = 'absolute';
+                newDiv.style.top = '58px';
+                newDiv.style.left = '32%';
+                newDiv.style.zIndex = '99';
+                newDiv.style.padding = '5px';
+                newDiv.innerHTML = '<p style="margin-bottom: 0px">' + label + '</p>';
+                this.element.parentNode.appendChild(newDiv);
             }
         },
 
@@ -504,6 +516,14 @@
                 }
             }
             return this;
+        },
+
+        opacityPaper(opacity){
+            if (this.isCanvas) {
+                if (paper.view && this.viewer && this.viewer.world && this.viewer.world.getItemAt(0)) {
+                    paper.project.activeLayer.opacity = opacity;
+                }
+            }
         },
 
         throttle: function (func, ms) {
