@@ -413,7 +413,7 @@
                 newDiv.style.left = '32%';
                 newDiv.style.zIndex = '99';
                 newDiv.style.padding = '5px';
-                newDiv.innerHTML = '<p style="margin-bottom: 0px">' + label + '</p>';
+                newDiv.innerHTML = '<pre>' + label + '</pre>';
                 this.element.parentNode.appendChild(newDiv);
             }
         },
@@ -488,7 +488,7 @@
             if (this.isCanvas) {
                 if (paper.view && this.viewer && this.viewer.world && this.viewer.world.getItemAt(0)) {
                     var size = this.getSize();
-                    paper.view.setViewSize(new paper.Size(size.width, size.height));
+                    paper.view.viewSize = [size.width, size.height];
                     paper.view.zoom = (this.viewer.world.getItemAt(0)).viewportToImageZoom(this.viewer.viewport.getZoom(true));
                     paper.view.center = new paper.Point(0, 0);
                     paper.view.draw()
@@ -497,7 +497,7 @@
             return this;
         },
 
-        drawPaper: function (data) {
+        drawPaper: function (data, isJson = false) {
             if (this.isCanvas) {
                 if (paper.view && this.viewer && this.viewer.world && this.viewer.world.getItemAt(0)) {
                     var size = this.getSize();
@@ -506,7 +506,11 @@
                     paper.view.center = new paper.Point(0, 0);
                     if(data){
                         paper.project.clear()
-                        paper.project.importSVG(data)
+                        if(isJson){
+                            paper.project.importJSON(data)
+                        }else{
+                            paper.project.importSVG(data)
+                        }
                         paper.project.activeLayer.fitBounds(paper.view.bounds);
                     }else{
                         var path = new paper.Path.Rectangle(paper.view.bounds);
